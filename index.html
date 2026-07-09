@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Link Shortener</title>
+<title>Hybrid Link Shortener</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -81,7 +81,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>🔗 Link Shortener</h1>
+  <h1>🔗 Hybrid Link Shortener</h1>
   <p class="sub">Shorten, unshorten, and auto-expire links — saved on this device.</p>
 
   <div class="tabs">
@@ -150,7 +150,6 @@ function renderExpiryOptions() {
 }
 renderExpiryOptions();
 
-// Tabs Switch logic
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -190,6 +189,13 @@ function isValidUrl(str) {
 function extractCode(input) {
   const trimmed = input.trim();
   if (!trimmed) return '';
+  
+  // Handle complex extractions like ?go=code or /go/code
+  if (trimmed.includes('?go=')) {
+    const params = new URLSearchParams(trimmed.split('?')[1]);
+    return params.get('go') || '';
+  }
+  
   const parts = trimmed.split('/');
   return parts[parts.length - 1];
 }
@@ -198,7 +204,19 @@ function isExpired(link) {
   return link.expiresAt !== null && link.expiresAt <= Date.now();
 }
 
-// Fixed to use standard localStorage
+// Helper function to build dynamic link based on platform environment
+function buildShortLink(code) {
+  const base = window.location.origin + window.location.pathname;
+  
+  // If hosting on GitHub Pages, generate clean query parameter to prevent 404
+  if (window.location.hostname.includes('github.io')) {
+    return base + '?go=' + code;
+  }
+  
+  // Standard formatted path for platforms like Vercel, Netlify, or cPanel
+  return window.location.origin + '/go/' + code;
+}
+
 function loadLinks() {
   try {
     const data = localStorage.getItem('shortener_links');
@@ -215,12 +233,11 @@ function pruneExpired() {
   links = links.filter(l => l.expiresAt === null || l.expiresAt > cutoff);
 }
 
-// Fixed to use standard localStorage
 function saveLinks() {
   try {
     localStorage.setItem('shortener_links', JSON.stringify(links));
   } catch (e) {
-    showError(errBox, 'Could not save. Storage might be full.');
+    showError(errBox, 'Could not save data.');
   }
 }
 
@@ -246,8 +263,7 @@ function render() {
     .reverse()
     .map(l => {
       const expired = isExpired(l);
-      // Perfect use of window.location.origin!
-      const shortDisplay = window.location.origin + '/' + 'go/' + l.code;
+      const shortDisplay = buildShortLink(l.code);
       const date = new Date(l.created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
       const expText = formatExpiry(l);
       const expClass = expired ? 'exp-done' : (l.expiresAt && l.expiresAt - Date.now() < 3600000 ? 'exp-soon' : '');
@@ -326,7 +342,7 @@ unshortBtn.addEventListener('click', () => {
 unshortInput.addEventListener('keydown', e => { if (e.key === 'Enter') unshortBtn.click(); });
 
 window.copyCode = function (code) {
-  const text = window.location.origin + '/' + 'go/' + code;
+  const text = buildShortLink(code);
   navigator.clipboard?.writeText(text).then(() => {
     showToast('Copied: ' + text);
   }).catch(() => {
@@ -349,7 +365,44 @@ window.deleteLink = function (code) {
 btnEl.addEventListener('click', shorten);
 inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') shorten(); });
 
+
+// ==========================================
+// 🚀 HYBRID AUTOMATIC REDIRECT LOGIC
+// ==========================================
 loadLinks();
+
+let decodedCode = null;
+
+// Format 1: Query parameter processing (?go=M52Xde)
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.has('go')) {
+  decodedCode = urlParams.get('go');
+}
+
+// Format 2: Absolute clean pathname processing (/go/M52Xde)
+const currentPath = window.location.pathname;
+if (!decodedCode && currentPath.includes('/go/')) {
+  const pathParts = currentPath.split('/');
+  decodedCode = pathParts[pathParts.length - 1];
+}
+
+// Executing final redirection checks
+if (decodedCode) {
+  const matchedData = findByCode(decodedCode);
+  if (matchedData) {
+    if (!isExpired(matchedData)) {
+      window.location.replace(matchedData.url); // Perform clean client redirect
+    } else {
+      showError(errBox, 'This link has expired!');
+      document.querySelector('[data-tab="unshorten"]').click();
+      unshortInput.value = decodedCode;
+      unshortBtn.click();
+    }
+  } else {
+    showError(errBox, 'Link code not found or deleted.');
+  }
+}
+
 setInterval(render, 30000);
 </script>
 </body>
