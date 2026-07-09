@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Link Shortener</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f1115;
+    color: #e6e6e6;
+    min-height: 100vh;
+    padding: 24px 16px;
+  }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: #fff; }
+  p.sub { color: #8a8f98; font-size: 13px; margin-bottom: 20px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: #1a1d24; padding: 4px; border-radius: 10px; }
+  .tab {
+    flex: 1; text-align: center; padding: 9px 0; border-radius: 8px;
+    font-size: 13px; font-weight: 600; cursor: pointer; color: #8a8f98;
+  }
+  .tab.active { background: #6366f1; color: #fff; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .form { display: flex; gap: 8px; margin-bottom: 12px; }
+  input[type=text] {
+    flex: 1; padding: 12px 14px; border-radius: 10px;
+    border: 1px solid #2a2d35; background: #1a1d24; color: #fff;
+    font-size: 14px; outline: none;
+  }
+  input[type=text]:focus { border-color: #6366f1; }
+  button {
+    padding: 12px 18px; border-radius: 10px; border: none;
+    background: #6366f1; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  button:hover { background: #5457e6; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .expiry-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .exp-opt {
+    padding: 7px 12px; border-radius: 8px; border: 1px solid #2a2d35;
+    background: #1a1d24; color: #8a8f98; font-size: 12px; cursor: pointer;
+  }
+  .exp-opt.selected { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+  .item {
+    background: #1a1d24; border: 1px solid #2a2d35; border-radius: 12px;
+    padding: 14px; margin-bottom: 10px;
+  }
+  .item.expired { opacity: 0.45; }
+  .short { font-size: 15px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
+  .orig { font-size: 12px; color: #8a8f98; margin-top: 4px; word-break: break-all; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .meta { font-size: 11px; color: #6b7280; }
+  .meta.exp-soon { color: #fbbf24; }
+  .meta.exp-done { color: #f87171; }
+  .actions { display: flex; gap: 6px; }
+  .actions button { padding: 6px 10px; font-size: 12px; background: #2a2d35; }
+  .actions button:hover { background: #363a45; }
+  .actions .del { background: #3a1f24; color: #f87171; }
+  .actions .del:hover { background: #4a252b; }
+  .empty { color: #6b7280; text-align: center; padding: 40px 0; font-size: 14px; }
+  .err { color: #f87171; font-size: 13px; margin: -6px 0 16px 2px; }
+  .result-box {
+    background: #14201c; border: 1px solid #22553f; border-radius: 10px;
+    padding: 14px; margin-bottom: 16px; font-size: 13px; word-break: break-all;
+  }
+  .result-box a { color: #6ee7b7; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #1f2937; color: #fff; padding: 10px 16px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔗 Link Shortener</h1>
+  <p class="sub">Shorten, unshorten, and auto-expire links — saved on this device.</p>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="shorten">Shorten</div>
+    <div class="tab" data-tab="unshorten">Unshorten</div>
+  </div>
+
+  <div class="panel active" id="panel-shorten">
+    <div class="form">
+      <input type="text" id="urlInput" placeholder="https://example.com/very/long/link" />
+    </div>
+    <div class="expiry-row" id="expiryRow"></div>
+    <div class="form">
+      <button id="shortenBtn" style="width:100%;">Shorten</button>
+    </div>
+    <div class="err" id="errBox" style="display:none;"></div>
+  </div>
+
+  <div class="panel" id="panel-unshorten">
+    <div class="form">
+      <input type="text" id="unshortInput" placeholder="Paste short link or code (e.g. go/ab12cd)" />
+      <button id="unshortBtn">Find</button>
+    </div>
+    <div class="err" id="unshortErr" style="display:none;"></div>
+    <div id="unshortResult"></div>
+  </div>
+
+  <div id="list"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const listEl = document.getElementById('list');
+const inputEl = document.getElementById('urlInput');
+const btnEl = document.getElementById('shortenBtn');
+const errBox = document.getElementById('errBox');
+const toastEl = document.getElementById('toast');
+const expiryRow = document.getElementById('expiryRow');
+
+const unshortInput = document.getElementById('unshortInput');
+const unshortBtn = document.getElementById('unshortBtn');
+const unshortErr = document.getElementById('unshortErr');
+const unshortResult = document.getElementById('unshortResult');
+
+let links = []; // {code, url, created, expiresAt|null}
+
+const EXPIRY_OPTIONS = [
+  { label: 'Never', ms: null },
+  { label: '1 hour', ms: 60 * 60 * 1000 },
+  { label: '1 day', ms: 24 * 60 * 60 * 1000 },
+  { label: '7 days', ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: '30 days', ms: 30 * 24 * 60 * 60 * 1000 },
+];
+let selectedExpiry = EXPIRY_OPTIONS[2]; // default 1 day
+
+function renderExpiryOptions() {
+  expiryRow.innerHTML = EXPIRY_OPTIONS.map((opt, i) => `
+    <div class="exp-opt ${opt.label === selectedExpiry.label ? 'selected' : ''}" data-i="${i}">${opt.label}</div>
+  `).join('');
+  expiryRow.querySelectorAll('.exp-opt').forEach(el => {
+    el.addEventListener('click', () => {
+      selectedExpiry = EXPIRY_OPTIONS[+el.dataset.i];
+      renderExpiryOptions();
+    });
+  });
+}
+renderExpiryOptions();
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 1500);
+}
+
+function showError(el, msg) {
+  el.textContent = msg;
+  el.style.display = msg ? 'block' : 'none';
+}
+
+function genCode(len = 6) {
+  const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < len; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+function isValidUrl(str) {
+  try {
+    const u = new URL(str);
+    return u.protocol === 'http:' || u.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function extractCode(input) {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+  // handle "go/xxxxx" or full pasted short link or raw code
+  const parts = trimmed.split('/');
+  return parts[parts.length - 1];
+}
+
+function isExpired(link) {
+  return link.expiresAt !== null && link.expiresAt <= Date.now();
+}
+
+async function loadLinks() {
+  try {
+    const result = await window.storage.get('shortener:links', false);
+    links = result ? JSON.parse(result.value) : [];
+  } catch {
+    links = [];
+  }
+  pruneExpired();
+  render();
+}
+
+// Remove links expired more than 24h ago to keep storage tidy;
+// still-fresh expired ones stay visible (marked expired) for a while.
+function pruneExpired() {
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  links = links.filter(l => l.expiresAt === null || l.expiresAt > cutoff);
+}
+
+async function saveLinks() {
+  try {
+    await window.storage.set('shortener:links', JSON.stringify(links), false);
+  } catch (e) {
+    showError(errBox, 'Could not save. Try again.');
+  }
+}
+
+function formatExpiry(link) {
+  if (link.expiresAt === null) return 'Never expires';
+  const diff = link.expiresAt - Date.now();
+  if (diff <= 0) return 'Expired';
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `Expires in ${mins}m`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `Expires in ${hrs}h`;
+  const days = Math.round(hrs / 24);
+  return `Expires in ${days}d`;
+}
+
+function render() {
+  if (links.length === 0) {
+    listEl.innerHTML = '<div class="empty">No links yet. Shorten one above ↑</div>';
+    return;
+  }
+  listEl.innerHTML = links
+    .slice()
+    .reverse()
+    .map(l => {
+      const expired = isExpired(l);
+      const shortDisplay = window.location.origin + 'go/' + l.code;
+      const date = new Date(l.created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      const expText = formatExpiry(l);
+      const expClass = expired ? 'exp-done' : (l.expiresAt && l.expiresAt - Date.now() < 3600000 ? 'exp-soon' : '');
+      return `
+        <div class="item ${expired ? 'expired' : ''}">
+          <div class="short">${shortDisplay}</div>
+          <div class="orig">${escapeHtml(l.url)}</div>
+          <div class="row">
+            <span class="meta">${date} · <span class="${expClass}">${expText}</span></span>
+            <div class="actions">
+              ${!expired ? `<button onclick="copyCode('${l.code}')">Copy</button>
+              <button onclick="openUrl('${l.code}')">Open</button>` : ''}
+              <button class="del" onclick="deleteLink('${l.code}')">Delete</button>
+            </div>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+async function shorten() {
+  const url = inputEl.value.trim();
+  showError(errBox, '');
+  if (!url) return;
+  if (!isValidUrl(url)) {
+    showError(errBox, 'Enter a valid URL starting with http:// or https://');
+    return;
+  }
+  btnEl.disabled = true;
+  let code = genCode();
+  while (links.some(l => l.code === code)) code = genCode();
+  const expiresAt = selectedExpiry.ms === null ? null : Date.now() + selectedExpiry.ms;
+  links.push({ origin: window.location.origin, code, url, created: Date.now(), expiresAt });
+  await saveLinks();
+  inputEl.value = '';
+  render();
+  btnEl.disabled = false;
+  showToast('Shortened!');
+}
+
+function findByCode(code) {
+  return links.find(l => l.code === code);
+}
+
+unshortBtn.addEventListener('click', () => {
+  showError(unshortErr, '');
+  unshortResult.innerHTML = '';
+  const code = extractCode(unshortInput.value);
+  if (!code) {
+    showError(unshortErr, 'Enter a short link or code.');
+    return;
+  }
+  const link = findByCode(code);
+  if (!link) {
+    showError(unshortErr, 'No link found for that code.');
+    return;
+  }
+  if (isExpired(link)) {
+    showError(unshortErr, 'This link has expired.');
+    return;
+  }
+  unshortResult.innerHTML = `
+    <div class="result-box">
+      Original URL:<br>
+      <a href="${escapeHtml(link.url)}" target="_blank">${escapeHtml(link.url)}</a>
+    </div>
+  `;
+});
+unshortInput.addEventListener('keydown', e => { if (e.key === 'Enter') unshortBtn.click(); });
+
+window.copyCode = function (code) {
+  const text = window.location.origin + 'go/' + code;
+  navigator.clipboard?.writeText(text).catch(() => {});
+  showToast('Copied: ' + text);
+};
+
+window.openUrl = function (code) {
+  const l = findByCode(code);
+  if (l && !isExpired(l)) window.open(l.url, '_blank');
+};
+
+window.deleteLink = async function (code) {
+  links = links.filter(l => l.code !== code);
+  await saveLinks();
+  render();
+  showToast('Deleted');
+};
+
+btnEl.addEventListener('click', shorten);
+inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') shorten(); });
+
+loadLinks();
+// Refresh countdowns / expired states periodically
+setInterval(render, 30000);
+</script>
+</body>
+</html>
