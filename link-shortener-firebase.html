@@ -133,7 +133,12 @@ document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', (
 
 function showToast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 1500); }
 function showError(el, msg) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
-function genCode() { return Math.random().toString(36).substring(2, 8); }
+let knownCodes = new Set();
+function genCode() {
+  let c = Math.random().toString(36).substring(2, 8);
+  while (c.length < 6 || knownCodes.has(c)) c = Math.random().toString(36).substring(2, 8);
+  return c;
+}
 function isValidUrl(str) { try { const u = new URL(str); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; } }
 
 function extractCode(input) {
@@ -150,6 +155,7 @@ function buildShortLink(code) {
 function syncLinks() {
   db.ref('links').on('value', (snapshot) => {
     const data = snapshot.val() || {};
+    knownCodes = new Set(Object.keys(data));
     const globalLinks = Object.keys(data).map(key => ({ code: key, ...data[key] }));
     render(globalLinks);
   });
@@ -185,7 +191,9 @@ function shorten() {
   const expiresAt = selectedExpiry.ms === null ? null : Date.now() + selectedExpiry.ms;
   
   db.ref('links/' + code).set({ url, created: Date.now(), expiresAt }, (err) => {
-    btnEl.disabled = false; inputEl.value = ''; showToast('Saved to cloud!');
+    btnEl.disabled = false;
+    if (err) { showError(errBox, 'Save failed: ' + err.message); return; }
+    inputEl.value = ''; showToast('Saved to cloud!');
   });
 }
 
