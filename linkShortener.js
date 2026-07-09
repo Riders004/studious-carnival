@@ -1,23 +1,6 @@
 /**
- * Link Shortener — plain JS module
- * -----------------------------------
- * Usage:
- *   const LinkShortener = require('./linkShortener');
- *   const ls = new LinkShortener({ file: './links.json' }); // optional persistence
- *
- *   const short = ls.shorten('https://example.com/very/long/link', '1d');
- *   // short => { code: 'aB3xQ9', short: 'go/aB3xQ9', url: '...', expiresAt: 173... }
- *
- *   const original = ls.unshorten('go/aB3xQ9'); // or just 'aB3xQ9'
- *   // original => 'https://example.com/very/long/link'  (or null if not found/expired)
- *
- *   ls.delete('aB3xQ9');
- *   ls.list();          // all non-expired links
- *   ls.cleanup();        // manually purge expired links
- *
- * Auto-expiry: pass a duration string ('10m','1h','1d','7d','30d') or ms number
- * or null for never. Expired links are auto-skipped by unshorten()/list(),
- * and a background timer purges them from storage periodically.
+ * Link Shortener — plain JS module (Hybrid & Express Optimized)
+ * -----------------------------------------------------------
  */
 
 const fs = require('fs');
@@ -97,8 +80,18 @@ class LinkShortener {
     return entry.expiresAt !== null && entry.expiresAt <= Date.now();
   }
 
+  // 🛠️ UPDATED: Ab yeh raw query parameters (?go=code) ko bhi smoothly bypass/extract karega
   _extractCode(input) {
-    const trimmed = String(input).trim();
+    if (!input) return '';
+    let trimmed = String(input).trim();
+    
+    // Check for query strings like ?go=abc
+    if (trimmed.includes('?go=')) {
+      const urlParts = trimmed.split('?go=');
+      trimmed = urlParts[urlParts.length - 1];
+    }
+    
+    // Fallback standard path splitter
     const parts = trimmed.split('/');
     return parts[parts.length - 1];
   }
@@ -106,7 +99,7 @@ class LinkShortener {
   /**
    * Shorten a URL.
    * @param {string} url
-   * @param {string|number|null} [expiry] - overrides defaultExpiry. '1h','7d', ms number, or null for never.
+   * @param {string|number|null} [expiry] - overrides defaultExpiry.
    * @returns {{code: string, short: string, url: string, expiresAt: number|null}}
    */
   shorten(url, expiry) {
@@ -128,7 +121,7 @@ class LinkShortener {
 
   /**
    * Resolve a short code/link back to the original URL.
-   * @param {string} shortOrCode - e.g. 'go/aB3xQ9' or just 'aB3xQ9'
+   * @param {string} shortOrCode - e.g. 'go/aB3xQ9', '?go=aB3xQ9' or just 'aB3xQ9'
    * @returns {string|null} original URL, or null if not found / expired
    */
   unshorten(shortOrCode) {
@@ -139,9 +132,7 @@ class LinkShortener {
     return entry.url;
   }
 
-  /**
-   * Get full info about a code (even if expired).
-   */
+  /** Get full info about a code (even if expired). */
   get(shortOrCode) {
     const code = this._extractCode(shortOrCode);
     const entry = this.links.get(code);
@@ -180,26 +171,10 @@ class LinkShortener {
     return removed;
   }
 
-  /** Stop the background cleanup timer (call on shutdown if needed). */
+  /** Stop the background cleanup timer */
   stop() {
     if (this._timer) clearInterval(this._timer);
   }
 }
 
 module.exports = LinkShortener;
-
-// ---- quick demo when run directly: `node linkShortener.js` ----
-if (require.main === module) {
-  const ls = new LinkShortener({ file: './links.demo.json', defaultExpiry: '1d' });
-
-  const s1 = ls.shorten('https://example.com/some/very/long/path?query=123');
-  console.log('Shortened:', s1);
-
-  const original = ls.unshorten(s1.code);
-  console.log('Unshortened:', original);
-
-  const s2 = ls.shorten('https://example.com/expires-fast', '1m');
-  console.log('Shortened (1m expiry):', s2);
-
-  console.log('All links:', ls.list());
-}
