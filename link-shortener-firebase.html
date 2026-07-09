@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔗 Cloud Link Shortener (Firebase)</title>
+<title>🔗 Global Link Shortener (Firebase)</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <style>
@@ -45,7 +45,9 @@
   .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; word-break: break-all; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .result-box .url-text { flex: 1; }
   .result-box a { color: #6ee7b7; text-decoration: none; font-weight: 500; }
+  .result-box a:hover { text-decoration: underline; }
   .result-box button { padding: 8px 14px; font-size: 12px; background: #22553f; width: auto; color: #fff; }
+  .result-box button:hover { background: #2c6e51; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; }
   .toast.show { opacity: 1; }
   @media (min-width: 600px) { body { padding: 40px 24px; } .wrap { max-width: 650px; } h1 { font-size: 26px; text-align: left; } p.sub { text-align: left; font-size: 15px; } .form { flex-direction: row; } input[type=text] { flex: 1; } button { width: auto; white-space: nowrap; } .row { flex-direction: row; justify-content: space-between; align-items: center; } .actions { width: auto; } .actions button { flex: none; width: 80px; } }
@@ -72,7 +74,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ⚠️ APNI FIREBASE CONFIG YAHAN DALO
+// ⚠️ APNI FIREBASE CONFIG DETAILS YAHAN BHARO
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -83,7 +85,6 @@ const firebaseConfig = {
   appId: "YOUR_APP_ID"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -132,7 +133,6 @@ function buildShortLink(code) {
   return base.endsWith('/') ? base + '?go=' + code : base + '/?go=' + code;
 }
 
-// Global Sync from Firebase Cloud Realtime
 function syncLinks() {
   db.ref('links').on('value', (snapshot) => {
     const data = snapshot.val() || {};
@@ -142,7 +142,7 @@ function syncLinks() {
 }
 
 function render(globalLinks) {
-  if (globalLinks.length === 0) { listEl.innerHTML = '<div class="empty">No links available global cloud storage.</div>'; return; }
+  if (globalLinks.length === 0) { listEl.innerHTML = '<div class="empty">No links available inside cloud.</div>'; return; }
   listEl.innerHTML = globalLinks.slice().reverse().map(l => {
     const expired = l.expiresAt !== null && l.expiresAt <= Date.now();
     const shortDisplay = buildShortLink(l.code);
@@ -165,21 +165,19 @@ function escapeHtml(str) { const div = document.createElement('div'); div.textCo
 
 function shorten() {
   const url = inputEl.value.trim(); showError(errBox, '');
-  if (!url || !isValidUrl(url)) { showError(errBox, 'Enter a valid HTTP/HTTPS URL'); return; }
+  if (!url || !isValidUrl(url)) { showError(errBox, 'Enter a valid URL starting with http/https'); return; }
   btnEl.disabled = true;
   const code = genCode();
   const expiresAt = selectedExpiry.ms === null ? null : Date.now() + selectedExpiry.ms;
   
-  // Push to Firebase Cloud Database
   db.ref('links/' + code).set({ url, created: Date.now(), expiresAt }, (err) => {
-    btnEl.disabled = false; inputEl.value = ''; showToast('Shortened to Cloud!');
+    btnEl.disabled = false; inputEl.value = ''; showToast('Saved to cloud!');
   });
 }
 
 unshortBtn.addEventListener('click', () => {
   showError(unshortErr, ''); unshortResult.innerHTML = '';
-  const code = extractCode(unshortInput.value);
-  if (!code) return;
+  const code = extractCode(unshortInput.value); if (!code) return;
   db.ref('links/' + code).once('value').then(snap => {
     const link = snap.val();
     if (!link || (link.expiresAt && link.expiresAt <= Date.now())) { showError(unshortErr, 'Link not found or expired.'); return; }
@@ -187,14 +185,13 @@ unshortBtn.addEventListener('click', () => {
   });
 });
 
-window.copyDecodedUrl = function(u) { navigator.clipboard?.writeText(u).then(() => showToast('URL Copied!')); };
+window.copyDecodedUrl = function(u) { navigator.clipboard?.writeText(u).then(() => showToast('Original URL Copied!')); };
 window.copyCode = function(c) { navigator.clipboard?.writeText(buildShortLink(c)).then(() => showToast('Short Link Copied!')); };
-window.deleteLink = function(c) { db.ref('links/' + c).remove().then(() => showToast('Deleted from Cloud')); };
+window.deleteLink = function(c) { db.ref('links/' + c).remove().then(() => showToast('Deleted')); };
 
 btnEl.addEventListener('click', shorten);
 syncLinks();
 
-// Instant Router Redirection
 const urlParams = new URLSearchParams(window.location.search);
 if (urlParams.has('go')) {
   const c = urlParams.get('go');
