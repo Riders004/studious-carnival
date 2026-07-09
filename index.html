@@ -2,108 +2,151 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Hybrid Link Shortener</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dynamic Link Shortener</title>
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
   body {
-    margin: 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: #0f1115;
     color: #e6e6e6;
     min-height: 100vh;
-    padding: 24px 16px;
+    padding: 20px 16px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
-  .wrap { max-width: 480px; margin: 0 auto; }
-  h1 { font-size: 20px; font-weight: 600; margin-bottom: 4px; color: #fff; }
-  p.sub { color: #8a8f98; font-size: 13px; margin-bottom: 20px; }
 
-  .tabs { display: flex; gap: 6px; margin-bottom: 16px; background: #1a1d24; padding: 4px; border-radius: 10px; }
+  /* 📱 MOBILE FIRST DESIGN (Default structure) */
+  .wrap { 
+    width: 100%; 
+    max-width: 100%; /* Mobile par poori width lega */
+    margin: 0 auto; 
+  }
+  
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 6px; color: #fff; text-align: center; }
+  p.sub { color: #8a8f98; font-size: 14px; margin-bottom: 24px; text-align: center; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; background: #1a1d24; padding: 4px; border-radius: 10px; }
   .tab {
-    flex: 1; text-align: center; padding: 9px 0; border-radius: 8px;
-    font-size: 13px; font-weight: 600; cursor: pointer; color: #8a8f98;
+    flex: 1; text-align: center; padding: 12px 0; border-radius: 8px;
+    font-size: 14px; font-weight: 600; cursor: pointer; color: #8a8f98;
+    transition: all 0.2s ease;
   }
   .tab.active { background: #6366f1; color: #fff; }
 
   .panel { display: none; }
   .panel.active { display: block; }
 
-  .form { display: flex; gap: 8px; margin-bottom: 12px; }
+  /* Forms use Flex direction for scaling grid */
+  .form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  
   input[type=text] {
-    flex: 1; padding: 12px 14px; border-radius: 10px;
+    width: 100%; padding: 14px; border-radius: 10px;
     border: 1px solid #2a2d35; background: #1a1d24; color: #fff;
-    font-size: 14px; outline: none;
+    font-size: 15px; outline: none; transition: border 0.2s;
   }
   input[type=text]:focus { border-color: #6366f1; }
+  
   button {
-    padding: 12px 18px; border-radius: 10px; border: none;
-    background: #6366f1; color: #fff; font-weight: 600; font-size: 14px; cursor: pointer;
+    padding: 14px 20px; border-radius: 10px; border: none;
+    background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer;
+    transition: background 0.2s;
   }
   button:hover { background: #5457e6; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-  .expiry-row { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .expiry-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
   .exp-opt {
-    padding: 7px 12px; border-radius: 8px; border: 1px solid #2a2d35;
-    background: #1a1d24; color: #8a8f98; font-size: 12px; cursor: pointer;
+    flex: 1; min-width: 70px; text-align: center; padding: 10px 8px; border-radius: 8px; 
+    border: 1px solid #2a2d35; background: #1a1d24; color: #8a8f98; font-size: 13px; cursor: pointer;
   }
   .exp-opt.selected { background: #6366f1; border-color: #6366f1; color: #fff; }
 
+  /* Grid Layout for generated link cards */
+  #list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
+
   .item {
     background: #1a1d24; border: 1px solid #2a2d35; border-radius: 12px;
-    padding: 14px; margin-bottom: 10px;
+    padding: 16px; display: flex; flex-direction: column; gap: 8px;
   }
   .item.expired { opacity: 0.45; }
-  .short { font-size: 15px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
-  .orig { font-size: 12px; color: #8a8f98; margin-top: 4px; word-break: break-all; }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-  .meta { font-size: 11px; color: #6b7280; }
+  .short { font-size: 16px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
+  .orig { font-size: 13px; color: #8a8f98; word-break: break-all; }
+  
+  .row { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; border-top: 1px solid #2a2d35; padding-top: 12px; }
+  .meta { font-size: 12px; color: #6b7280; }
   .meta.exp-soon { color: #fbbf24; }
   .meta.exp-done { color: #f87171; }
-  .actions { display: flex; gap: 6px; }
-  .actions button { padding: 6px 10px; font-size: 12px; background: #2a2d35; }
+  
+  .actions { display: flex; gap: 8px; width: 100%; }
+  .actions button { flex: 1; padding: 10px; font-size: 13px; background: #2a2d35; }
   .actions button:hover { background: #363a45; }
   .actions .del { background: #3a1f24; color: #f87171; }
   .actions .del:hover { background: #4a252b; }
-  .empty { color: #6b7280; text-align: center; padding: 40px 0; font-size: 14px; }
-  .err { color: #f87171; font-size: 13px; margin: -6px 0 16px 2px; }
+  
+  .empty { color: #6b7280; text-align: center; padding: 50px 0; font-size: 15px; }
+  .err { color: #f87171; font-size: 14px; margin-bottom: 16px; text-align: left; }
   .result-box {
     background: #14201c; border: 1px solid #22553f; border-radius: 10px;
-    padding: 14px; margin-bottom: 16px; font-size: 13px; word-break: break-all;
+    padding: 16px; margin-bottom: 16px; font-size: 14px; word-break: break-all;
   }
   .result-box a { color: #6ee7b7; }
+  
   .toast {
-    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    background: #1f2937; color: #fff; padding: 10px 16px; border-radius: 8px;
-    font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none;
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #1f2937; color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000;
   }
   .toast.show { opacity: 1; }
+
+  /* 💻 TABLET RESPONSIVE BREAKPOINT (600px+) */
+  @media (min-width: 600px) {
+    body { padding: 40px 24px; }
+    .wrap { max-width: 650px; } /* Dashboard wider looks elegant here */
+    h1 { font-size: 26px; text-align: left; }
+    p.sub { text-align: left; font-size: 15px; }
+    .form { flex-direction: row; } /* Input and button align inline */
+    input[type=text] { flex: 1; }
+    button { width: auto; white-space: nowrap; }
+    .row { flex-direction: row; justify-content: space-between; align-items: center; }
+    .actions { width: auto; }
+    .actions button { flex: none; width: 80px; }
+  }
+
+  /* 🖥️ PC / LAPTOP & TV BREAKPOINT (1024px+) */
+  @media (min-width: 1024px) {
+    .wrap { max-width: 960px; }
+    /* Grid converts into 2 columns on massive screens so space doesn't look empty */
+    #list { grid-template-columns: 1fr 1fr; gap: 16px; }
+    h1 { font-size: 32px; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>🔗 Hybrid Link Shortener</h1>
-  <p class="sub">Shorten, unshorten, and auto-expire links — saved on this device.</p>
+  <p class="sub">Shorten, unshorten, and auto-expire links smoothly across any device.</p>
 
   <div class="tabs">
-    <div class="tab active" data-tab="shorten">Shorten</div>
-    <div class="tab" data-tab="unshorten">Unshorten</div>
+    <div class="tab active" data-tab="shorten">Shorten Link</div>
+    <div class="tab" data-tab="unshorten">Decode / Unshorten</div>
   </div>
 
   <div class="panel active" id="panel-shorten">
     <div class="form">
-      <input type="text" id="urlInput" placeholder="https://example.com/very/long/link" />
-    </div>
-    <div class="expiry-row" id="expiryRow"></div>
-    <div class="form">
-      <button id="shortenBtn" style="width:100%;">Shorten</button>
+      <input type="text" id="urlInput" placeholder="https://example.com/very/long/link/here" />
+      <button id="shortenBtn">Shorten URL</button>
     </div>
     <div class="err" id="errBox" style="display:none;"></div>
+    <div class="expiry-row" id="expiryRow"></div>
   </div>
 
   <div class="panel" id="panel-unshorten">
     <div class="form">
-      <input type="text" id="unshortInput" placeholder="Paste short link or code (e.g. go/ab12cd)" />
-      <button id="unshortBtn">Find</button>
+      <input type="text" id="unshortInput" placeholder="Paste short link or code (e.g. go/M52Xde)" />
+      <button id="unshortBtn">Find URL</button>
     </div>
     <div class="err" id="unshortErr" style="display:none;"></div>
     <div id="unshortResult"></div>
