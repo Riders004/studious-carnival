@@ -1,31 +1,27 @@
 /**
- * Link Shortener — ESM module
+ * Link Shortener — plain JS module (ESM Format)
  * -----------------------------------
  * Usage:
- *   import LinkShortener from './linkShortener.mjs';
+ * import LinkShortener from './linkShortener.js';
+ * const ls = new LinkShortener({ file: './links.json' }); // optional persistence
  *
- *   const ls = new LinkShortener({ file: './links.json' }); // optional persistence
+ * const short = ls.shorten('https://example.com/very/long/link', '1d');
+ * // short => { code: 'aB3xQ9', short: 'go/aB3xQ9', url: '...', expiresAt: 173... }
  *
- *   const short = ls.shorten('https://example.com/very/long/link', '1d');
- *   // short => { code: 'aB3xQ9', short: 'go/aB3xQ9', url: '...', expiresAt: 173... }
+ * const original = ls.unshorten('go/aB3xQ9'); // or just 'aB3xQ9'
+ * // original => 'https://example.com/very/long/link'  (or null if not found/expired)
  *
- *   const original = ls.unshorten('go/aB3xQ9'); // or just 'aB3xQ9'
- *   // original => 'https://example.com/very/long/link'  (or null if not found/expired)
- *
- *   ls.delete('aB3xQ9');
- *   ls.list();      // all non-expired links
- *   ls.cleanup();   // manually purge expired links
- *   ls.stop();      // stop background cleanup timer on shutdown
+ * ls.delete('aB3xQ9');
+ * ls.list();          // all non-expired links
+ * ls.cleanup();        // manually purge expired links
  *
  * Auto-expiry: pass a duration string ('10m','1h','1d','7d','30d') or ms number
  * or null for never. Expired links are auto-skipped by unshorten()/list(),
  * and a background timer purges them from storage periodically.
- *
- * Requires Node with ESM support. Either name the file .mjs, or set
- * "type": "module" in package.json and use a .js extension.
  */
 
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 const DURATIONS = {
   m: 60 * 1000,
@@ -49,7 +45,7 @@ function genCode(len = 6) {
   return s;
 }
 
-export default class LinkShortener {
+class LinkShortener {
   /**
    * @param {Object} opts
    * @param {string} [opts.file] - path to JSON file for persistence. If omitted, in-memory only.
@@ -102,8 +98,14 @@ export default class LinkShortener {
     return entry.expiresAt !== null && entry.expiresAt <= Date.now();
   }
 
+  // 🛠️ Hybrid Extraction Logic Intact
   _extractCode(input) {
-    const trimmed = String(input).trim();
+    if (!input) return '';
+    let trimmed = String(input).trim();
+    if (trimmed.includes('?go=')) {
+      const urlParts = trimmed.split('?go=');
+      trimmed = urlParts[urlParts.length - 1];
+    }
     const parts = trimmed.split('/');
     return parts[parts.length - 1];
   }
@@ -144,7 +146,9 @@ export default class LinkShortener {
     return entry.url;
   }
 
-  /** Get full info about a code (even if expired). */
+  /**
+   * Get full info about a code (even if expired).
+   */
   get(shortOrCode) {
     const code = this._extractCode(shortOrCode);
     const entry = this.links.get(code);
@@ -189,8 +193,11 @@ export default class LinkShortener {
   }
 }
 
-// ---- quick demo when run directly: `node linkShortener.mjs` ----
-if (import.meta.url === `file://${process.argv[1]}`) {
+export default LinkShortener;
+
+// ---- quick demo when run directly: `node linkShortener.js` ----
+const nodePath = fileURLToPath(import.meta.url);
+if (process.argv[1] === nodePath) {
   const ls = new LinkShortener({ file: './links.demo.json', defaultExpiry: '1d' });
 
   const s1 = ls.shorten('https://example.com/some/very/long/path?query=123');
@@ -203,6 +210,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   console.log('Shortened (1m expiry):', s2);
 
   console.log('All links:', ls.list());
-
-  ls.stop();
 }
