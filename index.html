@@ -126,7 +126,7 @@ const unshortBtn = document.getElementById('unshortBtn');
 const unshortErr = document.getElementById('unshortErr');
 const unshortResult = document.getElementById('unshortResult');
 
-let links = []; // {code, url, created, expiresAt|null}
+let links = [];
 
 const EXPIRY_OPTIONS = [
   { label: 'Never', ms: null },
@@ -135,7 +135,7 @@ const EXPIRY_OPTIONS = [
   { label: '7 days', ms: 7 * 24 * 60 * 60 * 1000 },
   { label: '30 days', ms: 30 * 24 * 60 * 60 * 1000 },
 ];
-let selectedExpiry = EXPIRY_OPTIONS[2]; // default 1 day
+let selectedExpiry = EXPIRY_OPTIONS[2];
 
 function renderExpiryOptions() {
   expiryRow.innerHTML = EXPIRY_OPTIONS.map((opt, i) => `
@@ -150,7 +150,7 @@ function renderExpiryOptions() {
 }
 renderExpiryOptions();
 
-// Tabs
+// Tabs Switch logic
 document.querySelectorAll('.tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -190,7 +190,6 @@ function isValidUrl(str) {
 function extractCode(input) {
   const trimmed = input.trim();
   if (!trimmed) return '';
-  // handle "go/xxxxx" or full pasted short link or raw code
   const parts = trimmed.split('/');
   return parts[parts.length - 1];
 }
@@ -199,10 +198,11 @@ function isExpired(link) {
   return link.expiresAt !== null && link.expiresAt <= Date.now();
 }
 
-async function loadLinks() {
+// Fixed to use standard localStorage
+function loadLinks() {
   try {
-    const result = await window.storage.get('shortener:links', false);
-    links = result ? JSON.parse(result.value) : [];
+    const data = localStorage.getItem('shortener_links');
+    links = data ? JSON.parse(data) : [];
   } catch {
     links = [];
   }
@@ -210,18 +210,17 @@ async function loadLinks() {
   render();
 }
 
-// Remove links expired more than 24h ago to keep storage tidy;
-// still-fresh expired ones stay visible (marked expired) for a while.
 function pruneExpired() {
   const cutoff = Date.now() - 24 * 60 * 60 * 1000;
   links = links.filter(l => l.expiresAt === null || l.expiresAt > cutoff);
 }
 
-async function saveLinks() {
+// Fixed to use standard localStorage
+function saveLinks() {
   try {
-    await window.storage.set('shortener:links', JSON.stringify(links), false);
+    localStorage.setItem('shortener_links', JSON.stringify(links));
   } catch (e) {
-    showError(errBox, 'Could not save. Try again.');
+    showError(errBox, 'Could not save. Storage might be full.');
   }
 }
 
@@ -247,6 +246,7 @@ function render() {
     .reverse()
     .map(l => {
       const expired = isExpired(l);
+      // Perfect use of window.location.origin!
       const shortDisplay = window.location.origin + '/' + 'go/' + l.code;
       const date = new Date(l.created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
       const expText = formatExpiry(l);
@@ -275,7 +275,7 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-async function shorten() {
+function shorten() {
   const url = inputEl.value.trim();
   showError(errBox, '');
   if (!url) return;
@@ -288,7 +288,7 @@ async function shorten() {
   while (links.some(l => l.code === code)) code = genCode();
   const expiresAt = selectedExpiry.ms === null ? null : Date.now() + selectedExpiry.ms;
   links.push({ origin: window.location.origin, code, url, created: Date.now(), expiresAt });
-  await saveLinks();
+  saveLinks();
   inputEl.value = '';
   render();
   btnEl.disabled = false;
@@ -327,8 +327,11 @@ unshortInput.addEventListener('keydown', e => { if (e.key === 'Enter') unshortBt
 
 window.copyCode = function (code) {
   const text = window.location.origin + '/' + 'go/' + code;
-  navigator.clipboard?.writeText(text).catch(() => {});
-  showToast('Copied: ' + text);
+  navigator.clipboard?.writeText(text).then(() => {
+    showToast('Copied: ' + text);
+  }).catch(() => {
+    showToast('Failed to copy');
+  });
 };
 
 window.openUrl = function (code) {
@@ -336,9 +339,9 @@ window.openUrl = function (code) {
   if (l && !isExpired(l)) window.open(l.url, '_blank');
 };
 
-window.deleteLink = async function (code) {
+window.deleteLink = function (code) {
   links = links.filter(l => l.code !== code);
-  await saveLinks();
+  saveLinks();
   render();
   showToast('Deleted');
 };
@@ -347,7 +350,6 @@ btnEl.addEventListener('click', shorten);
 inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') shorten(); });
 
 loadLinks();
-// Refresh countdowns / expired states periodically
 setInterval(render, 30000);
 </script>
 </body>
