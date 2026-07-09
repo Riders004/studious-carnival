@@ -1,4 +1,3 @@
-```markdown
 # 🛠️ Complete Cloud Database Setup Guide (Rasta 2 & Rasta 3)
 
 This guide provides step-by-step instructions to connect your Link Shortener to an online cloud database layer so your shortened links work seamlessly across all networks and devices globally.
