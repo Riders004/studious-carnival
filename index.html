@@ -3,9 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔗 Global Link Shortener (Firebase)</title>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+<title>🔗 Hybrid Link Shortener (JSONBin)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1115; color: #e6e6e6; min-height: 100vh; padding: 20px 16px; display: flex; justify-content: center; align-items: flex-start; }
@@ -22,94 +20,75 @@
   input[type=text]:focus { border-color: #6366f1; }
   button { padding: 14px 20px; border-radius: 10px; border: none; background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; transition: background 0.2s; }
   button:hover { background: #5457e6; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
-  .expiry-row { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; justify-content: center; }
-  .exp-opt { flex: 1; min-width: 75px; text-align: center; padding: 10px 8px; border-radius: 8px; border: 1px solid #2a2d35; background: #1a1d24; color: #8a8f98; font-size: 13px; cursor: pointer; }
-  .exp-opt.selected { background: #6366f1; border-color: #6366f1; color: #fff; }
   #list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
   .item { background: #1a1d24; border: 1px solid #2a2d35; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
-  .item.expired { opacity: 0.45; }
   .short { font-size: 16px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
   .orig { font-size: 13px; color: #8a8f98; word-break: break-all; }
-  .row { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; border-top: 1px solid #2a2d35; padding-top: 12px; }
-  .meta { font-size: 12px; color: #6b7280; }
-  .meta.exp-soon { color: #fbbf24; }
-  .meta.exp-done { color: #f87171; }
-  .actions { display: flex; gap: 8px; width: 100%; }
-  .actions button { flex: 1; padding: 10px; font-size: 13px; background: #2a2d35; }
-  .actions button:hover { background: #363a45; }
-  .actions .del { background: #3a1f24; color: #f87171; }
-  .actions .del:hover { background: #4a252b; }
-  .empty { color: #6b7280; text-align: center; padding: 50px 0; font-size: 15px; }
-  .err { color: #f87171; font-size: 14px; margin-bottom: 16px; text-align: left; }
-  .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; word-break: break-all; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-  .result-box .url-text { flex: 1; }
-  .result-box a { color: #6ee7b7; text-decoration: none; font-weight: 500; }
-  .result-box a:hover { text-decoration: underline; }
-  .result-box button { padding: 8px 14px; font-size: 12px; background: #22553f; width: auto; color: #fff; }
-  .result-box button:hover { background: #2c6e51; }
-  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; }
+  
+  /* Fixed Result Box Styles for JSONBin */
+  .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; word-break: break-all; }
+  .result-box .url-text { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .result-box a { color: #6ee7b7; text-decoration: none; font-weight: 500; word-break: break-all; }
+  .result-box button { padding: 8px 14px; font-size: 12px; background: #22553f; color: #fff; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; }
+  
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
   .toast.show { opacity: 1; }
-  @media (min-width: 600px) { body { padding: 40px 24px; } .wrap { max-width: 650px; } h1 { font-size: 26px; text-align: left; } p.sub { text-align: left; font-size: 15px; } .form { flex-direction: row; } input[type=text] { flex: 1; } button { width: auto; white-space: nowrap; } .row { flex-direction: row; justify-content: space-between; align-items: center; } .actions { width: auto; } .actions button { flex: none; width: 80px; } }
-  @media (min-width: 1024px) { .wrap { max-width: 1000px; } #list { grid-template-columns: 1fr 1fr; gap: 16px; } h1 { font-size: 32px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🔗 Global Link Shortener (Firebase)</h1>
-  <p class="sub">Shorten and share globally. Links will work on anyone's device seamlessly.</p>
+  <h1>🔗 Hybrid Link Shortener</h1>
+  <p class="sub">Uses dynamic online API bins to sync links across different machines safely.</p>
   <div class="tabs"><div class="tab active" data-tab="shorten">Shorten Link</div><div class="tab" data-tab="unshorten">Decode / Unshorten</div></div>
+  
   <div class="panel active" id="panel-shorten">
-    <div class="form"><input type="text" id="urlInput" placeholder="https://example.com/very/long/link" /><button id="shortenBtn">Shorten URL</button></div>
-    <div class="err" id="errBox" style="display:none;"></div>
-    <div class="expiry-row" id="expiryRow"></div>
+    <div class="form"><input type="text" id="urlInput" placeholder="https://example.com" /><button id="shortenBtn">Shorten URL</button></div>
   </div>
+  
   <div class="panel" id="panel-unshorten">
-    <div class="form"><input type="text" id="unshortInput" placeholder="Paste short link or code (e.g. ?go=M52Xde)" /><button id="unshortBtn">Find URL</button></div>
-    <div class="err" id="unshortErr" style="display:none;"></div>
+    <div class="form"><input type="text" id="unshortInput" placeholder="Paste link or code" /><button id="unshortBtn">Find URL</button></div>
     <div id="unshortResult"></div>
   </div>
+  
   <div id="list"></div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script>
-// ⚠️ APNI FIREBASE CONFIG DETAILS YAHAN BHARO
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID"
-};
+// ⚠️ APNI JSONBIN SECRETS YAHAN LIKHO
+const BIN_ID = "6a4febd3da38895dfe476f3a";
+const MASTER_KEY = "$2a$10$/KBluzGUqR2SXkDDJDmNkugfJoKGwsZeud8L9T88oNS1fGKlCWoHC";
+const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;   // https://api.jsonbin.io/v3/b/6a4febd3da38895dfe476f3a // https://api.jsonbin.io/v3/b/6a4febd3da38895dfe476f3a
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-const listEl = document.getElementById('list');
-const inputEl = document.getElementById('urlInput');
-const btnEl = document.getElementById('shortenBtn');
-const errBox = document.getElementById('errBox');
+let globalLinks = {};
 const toastEl = document.getElementById('toast');
-const expiryRow = document.getElementById('expiryRow');
-const unshortInput = document.getElementById('unshortInput');
-const unshortBtn = document.getElementById('unshortBtn');
-const unshortErr = document.getElementById('unshortErr');
-const unshortResult = document.getElementById('unshortResult');
+function showToast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 1500); }
 
-const EXPIRY_OPTIONS = [
-  { label: 'Never', ms: null }, { label: '1 hour', ms: 60 * 60 * 1000 },
-  { label: '1 day', ms: 24 * 60 * 60 * 1000 }, { label: '7 days', ms: 7 * 24 * 60 * 60 * 1000 }
-];
-let selectedExpiry = EXPIRY_OPTIONS[2];
-
-function renderExpiryOptions() {
-  expiryRow.innerHTML = EXPIRY_OPTIONS.map((opt, i) => `<div class="exp-opt ${opt.label === selectedExpiry.label ? 'selected' : ''}" data-i="${i}">${opt.label}</div>`).join('');
-  expiryRow.querySelectorAll('.exp-opt').forEach(el => el.addEventListener('click', () => { selectedExpiry = EXPIRY_OPTIONS[+el.dataset.i]; renderExpiryOptions(); }));
+async function loadBin() {
+  try {
+    const res = await fetch(`${API_URL}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
+    const json = await res.json();
+    globalLinks = json.record || {};
+    render(); checkRedirect();
+  } catch (e) { console.error("Sync failed", e); }
 }
-renderExpiryOptions();
+
+async function saveBin() {
+  try {
+    await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY }, body: JSON.stringify(globalLinks) });
+    render(); showToast('Saved globally!');
+  } catch (e) { alert("API Save Error"); }
+}
+
+function render() {
+  const listEl = document.getElementById('list'); const keys = Object.keys(globalLinks);
+  if (keys.length === 0) { listEl.innerHTML = '<div class="empty">No active cloud links.</div>'; return; }
+  listEl.innerHTML = keys.reverse().map(code => {
+    const base = window.location.origin + window.location.pathname;
+    const shortDisplay = base.endsWith('/') ? base + '?go=' + code : base + '/?go=' + code;
+    return `<div class="item"><div class="short">${shortDisplay}</div><div class="orig">${globalLinks[code]}</div></div>`;
+  }).join('');
+}
 
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -117,89 +96,28 @@ document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', (
   tab.classList.add('active'); document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
 }));
 
-function showToast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 1500); }
-function showError(el, msg) { el.textContent = msg; el.style.display = msg ? 'block' : 'none'; }
-function genCode() { return Math.random().toString(36).substring(2, 8); }
-function isValidUrl(str) { try { const u = new URL(str); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; } }
-
-function extractCode(input) {
-  const trimmed = input.trim(); if (!trimmed) return '';
-  if (trimmed.includes('?go=')) return trimmed.split('?go=')[1].split('&')[0];
-  const parts = trimmed.split('/'); return parts[parts.length - 1];
-}
-
-function buildShortLink(code) {
-  const base = window.location.origin + window.location.pathname;
-  return base.endsWith('/') ? base + '?go=' + code : base + '/?go=' + code;
-}
-
-function syncLinks() {
-  db.ref('links').on('value', (snapshot) => {
-    const data = snapshot.val() || {};
-    const globalLinks = Object.keys(data).map(key => ({ code: key, ...data[key] }));
-    render(globalLinks);
-  });
-}
-
-function render(globalLinks) {
-  if (globalLinks.length === 0) { listEl.innerHTML = '<div class="empty">No links available inside cloud.</div>'; return; }
-  listEl.innerHTML = globalLinks.slice().reverse().map(l => {
-    const expired = l.expiresAt !== null && l.expiresAt <= Date.now();
-    const shortDisplay = buildShortLink(l.code);
-    return `
-      <div class="item ${expired ? 'expired' : ''}">
-        <div class="short">${shortDisplay}</div>
-        <div class="orig">${escapeHtml(l.url)}</div>
-        <div class="row">
-          <span class="meta">${expired ? '<span class="exp-done">Expired</span>' : 'Active global link'}</span>
-          <div class="actions">
-            ${!expired ? `<button onclick="copyCode('${l.code}')">Copy</button>` : ''}
-            <button class="del" onclick="deleteLink('${l.code}')">Delete</button>
-          </div>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function escapeHtml(str) { const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
-
-function shorten() {
-  const url = inputEl.value.trim(); showError(errBox, '');
-  if (!url || !isValidUrl(url)) { showError(errBox, 'Enter a valid URL starting with http/https'); return; }
-  btnEl.disabled = true;
-  const code = genCode();
-  const expiresAt = selectedExpiry.ms === null ? null : Date.now() + selectedExpiry.ms;
-  
-  db.ref('links/' + code).set({ url, created: Date.now(), expiresAt }, (err) => {
-    btnEl.disabled = false; inputEl.value = ''; showToast('Saved to cloud!');
-  });
-}
-
-unshortBtn.addEventListener('click', () => {
-  showError(unshortErr, ''); unshortResult.innerHTML = '';
-  const code = extractCode(unshortInput.value); if (!code) return;
-  db.ref('links/' + code).once('value').then(snap => {
-    const link = snap.val();
-    if (!link || (link.expiresAt && link.expiresAt <= Date.now())) { showError(unshortErr, 'Link not found or expired.'); return; }
-    unshortResult.innerHTML = `<div class="result-box"><div class="url-text"><strong>Original URL:</strong><br><a href="${escapeHtml(link.url)}" target="_blank">${escapeHtml(link.url)}</a></div><button onclick="copyDecodedUrl('${escapeHtml(link.url)}')">Copy</button></div>`;
-  });
+document.getElementById('shortenBtn').addEventListener('click', async () => {
+  const url = document.getElementById('urlInput').value.trim(); if(!url) return;
+  const code = Math.random().toString(36).substring(2, 8);
+  globalLinks[code] = url; document.getElementById('shortenBtn').disabled = true;
+  await saveBin(); document.getElementById('shortenBtn').disabled = false; document.getElementById('urlInput').value = '';
 });
 
-window.copyDecodedUrl = function(u) { navigator.clipboard?.writeText(u).then(() => showToast('Original URL Copied!')); };
-window.copyCode = function(c) { navigator.clipboard?.writeText(buildShortLink(c)).then(() => showToast('Short Link Copied!')); };
-window.deleteLink = function(c) { db.ref('links/' + c).remove().then(() => showToast('Deleted')); };
+document.getElementById('unshortBtn').addEventListener('click', () => {
+  const val = document.getElementById('unshortInput').value.trim();
+  let code = val.includes('?go=') ? val.split('?go=')[1].split('&')[0] : val.split('/').pop();
+  const resBox = document.getElementById('unshortResult');
+  // FIXED: Renders the absolute correct target raw URL destination mapping index dynamically
+  if(globalLinks[code]) {
+    resBox.innerHTML = `<div class="result-box"><div class="url-text"><strong>Original URL:</strong><a href="${globalLinks[code]}" target="_blank">${globalLinks[code]}</a></div><button onclick="navigator.clipboard.writeText('${globalLinks[code]}'); showToast('Copied!');">Copy</button></div>`;
+  } else { resBox.innerHTML = '<div style="color:#f87171;font-size:14px;">Not found</div>'; }
+});
 
-btnEl.addEventListener('click', shorten);
-syncLinks();
-
-const urlParams = new URLSearchParams(window.location.search);
-if (urlParams.has('go')) {
-  const c = urlParams.get('go');
-  db.ref('links/' + c).once('value').then(snap => {
-    const l = snap.val();
-    if (l && (!l.expiresAt || l.expiresAt > Date.now())) window.location.replace(l.url);
-  });
+function checkRedirect() {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('go') && globalLinks[urlParams.get('go')]) window.location.replace(globalLinks[urlParams.get('go')]);
 }
+loadBin();
 </script>
 </body>
 </html>

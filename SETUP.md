@@ -72,9 +72,11 @@ JSONBin offers a minimal setup requiring no dashboard logic adjustments. Ideal f
 
 ### Step 3: Create a Dynamic Data Bin
 1. Go to your JSONBin homepage terminal/workspace at [JSONBin.io App](https://jsonbin.io/app/) and click **Create a Bin**.
-2. In the text field box, provide a blank JSON schema block containing just empty brackets:
+2. In the text field box, provide a JSON schema block containing some data:
    ```json
-   {}
+   {
+  "status": "active"
+   }
    ```
  3. Click **Create** or **Save Bin**.
  4. Capture your unique **Bin ID** from the top dashboard metadata reference pane.
