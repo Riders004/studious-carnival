@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔗 Hybrid Link Shortener (JSONBin Version)</title>
+<title>🔗 Hybrid Link Shortener (JSONBin Fixed)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1115; color: #e6e6e6; min-height: 100vh; padding: 20px 16px; display: flex; justify-content: center; align-items: flex-start; }
@@ -20,6 +20,7 @@
   input[type=text]:focus { border-color: #6366f1; }
   button { width: 100%; padding: 14px 20px; border-radius: 10px; border: none; background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; transition: background 0.2s; }
   button:hover { background: #5457e6; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
   #list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
   .item { background: #1a1d24; border: 1px solid #2a2d35; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
   .short { font-size: 16px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
@@ -59,7 +60,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-const BIN_ID = "YOUR_BIN_ID_HERE";
+// ⚠️ APNI DYNAMIC BIN DETAILS YAHAN BHARNA
 const BIN_ID = "6a4febd3da38895dfe476f3a";
 const MASTER_KEY = "$2a$10$/KBluzGUqR2SXkDDJDmNkugfJoKGwsZeud8L9T88oNS1fGKlCWoHC";
 const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;   // https://api.jsonbin.io/v3/b/6a4febd3da38895dfe476f3a // https://api.jsonbin.io/v3/b/6a4febd3da38895dfe476f3a
@@ -116,17 +117,25 @@ document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', (
 document.getElementById('shortenBtn').addEventListener('click', async () => {
   const url = document.getElementById('urlInput').value.trim(); if(!url) return;
   const code = Math.random().toString(36).substring(2, 8);
-  globalLinks[code] = url; document.getElementById('shortenBtn').disabled = true;
-  await saveBin(); document.getElementById('shortenBtn').disabled = false; document.getElementById('urlInput').value = '';
+  globalLinks[code] = url; 
+  document.getElementById('shortenBtn').disabled = true;
+  await saveBin(); 
+  document.getElementById('shortenBtn').disabled = false; 
+  document.getElementById('urlInput').value = '';
 });
 
 document.getElementById('unshortBtn').addEventListener('click', () => {
-  const val = document.getElementById('unshortInput').value.trim();
+  const val = document.getElementById('unshortInput').value.trim(); if(!val) return;
   let code = val.includes('?go=') ? val.split('?go=')[1].split('&')[0] : val.split('/').pop();
   const resBox = document.getElementById('unshortResult');
   
   if(globalLinks[code] && code !== "status") {
-    resBox.innerHTML = `<div class="result-box"><div class="url-text"><strong>Original URL:</strong><a href="${globalLinks[code]}" target="_blank">${globalLinks[code]}</a></div><button onclick="navigator.clipboard.writeText('${globalLinks[code]}'); showToast('Copied!');">Copy</button></div>`;
+    resBox.innerHTML = `<div class="result-box"><div class="url-text"><strong>Original URL:</strong><a href="${globalLinks[code]}" target="_blank">${globalLinks[code]}</a></div><button id="copyDecBtn">Copy</button></div>`;
+    
+    document.getElementById('copyDecBtn').addEventListener('click', () => {
+      navigator.clipboard.writeText(globalLinks[code]);
+      showToast('Copied!');
+    });
   } else { resBox.innerHTML = '<div style="color:#f87171;font-size:14px;margin-top:10px;">Not found</div>'; }
 });
 

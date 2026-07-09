@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔗 Hybrid Link Shortener (Firebase Version)</title>
+<title>🔗 Hybrid Link Shortener (Firebase Fixed)</title>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 <style>
@@ -78,6 +78,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ⚠️ APNI ACTUAL FIREBASE DETAILS YAHAN BHARNA
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -195,7 +196,7 @@ unshortBtn.addEventListener('click', () => {
     const link = snap.val();
     if (!link || (link.expiresAt && link.expiresAt <= Date.now())) { showError(unshortErr, 'Link not found or expired.'); return; }
     unshortResult.innerHTML = `<div class="result-box"><div class="url-text"><strong>Original URL:</strong><a href="${escapeHtml(link.url)}" target="_blank">${escapeHtml(link.url)}</a></div><button onclick="copyDecodedUrl('${escapeHtml(link.url)}')">Copy</button></div>`;
-  });
+  }).catch(e => showError(unshortErr, 'Error fetching database data.'));
 });
 
 window.copyDecodedUrl = function(u) { navigator.clipboard?.writeText(u).then(() => showToast('Original URL Copied!')); };
