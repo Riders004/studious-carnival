@@ -19,6 +19,7 @@ Firebase provides a highly secure, instant, and production-ready real-time envir
 2. Enter an app nickname (e.g., `Shortener App`).
 3. Click **Register App**. 
 4. Firebase will display a code block containing a `firebaseConfig` constant. **Copy this entire object.** It looks like this:
+
    ```javascript
    const firebaseConfig = {
      apiKey: "AIzaSy...",
@@ -29,14 +30,15 @@ Firebase provides a highly secure, instant, and production-ready real-time envir
      messagingSenderId: "12345...",
      appId: "1:12345..."
    };
+   ```
 
-```
 ### Step 3: Provision the Realtime Database
  1. From the left sidebar menu, expand **Build** and select **Realtime Database**.
  2. Click the **Create Database** button.
  3. Choose a database location closest to your target audience and click **Next**.
  4. Select **Start in test mode** (this configures temporary open access rules) and click **Enable**.
  5. Go to the **Rules** tab at the top and ensure your rules explicitly permit operations by setting them to true:
+ 
    ```json
    {
      "rules": {
@@ -44,8 +46,8 @@ Firebase provides a highly secure, instant, and production-ready real-time envir
        ".write": true
      }
    }
-   
    ```
+   
  6. Click **Publish** to save changes.
 ### Step 4: Update index.html
  1. Open your code for Rasta 2.
@@ -63,9 +65,9 @@ JSONBin offers a minimal setup requiring no dashboard logic adjustments. Ideal f
 ### Step 3: Create a Dynamic Data Bin
  1. Go to your JSONBin homepage terminal/workspace and click **Create a Bin**.
  2. In the text field box, provide a blank JSON schema block containing just empty brackets:
+ 
    ```json
    {}
-   
    ```
  3. Click **Create** or **Save Bin**.
  4. Capture your unique **Bin ID** from the top dashboard metadata reference pane.
@@ -78,6 +80,3 @@ JSONBin offers a minimal setup requiring no dashboard logic adjustments. Ideal f
  1. Make sure your root file is strictly named index.html.
  2. Ensure you have replaced placeholder tokens with your real cloud authentication strings.
  3. Check your repository deployment settings tab inside GitHub Pages or Vercel and verify that your public live link path correctly runs over https://.
-```
-
-```
