@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🔗 Cloud Link Shortener (JSONBin)</title>
 <style>
-  /* [Bina chhede styling block pure system ke upar wali hi bilkul same use ho rhi hai] */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1115; color: #e6e6e6; min-height: 100vh; padding: 20px 16px; display: flex; justify-content: center; align-items: flex-start; }
   .wrap { width: 100%; max-width: 100%; margin: 0 auto; }
@@ -21,16 +20,14 @@
   input[type=text]:focus { border-color: #6366f1; }
   button { padding: 14px 20px; border-radius: 10px; border: none; background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; transition: background 0.2s; }
   button:hover { background: #5457e6; }
-  button:disabled { opacity: 0.5; cursor: not-allowed; }
   #list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 10px; }
   .item { background: #1a1d24; border: 1px solid #2a2d35; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
   .short { font-size: 16px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
   .orig { font-size: 13px; color: #8a8f98; word-break: break-all; }
   .row { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; border-top: 1px solid #2a2d35; padding-top: 12px; }
-  .actions { display: flex; gap: 8px; width: 100%; }
-  .actions button { flex: 1; padding: 10px; font-size: 13px; background: #2a2d35; }
-  .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-  .result-box a { color: #6ee7b7; text-decoration: none; }
+  .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-bottom: 16px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .result-box a { color: #6ee7b7; text-decoration: none; font-weight: 500; }
+  .result-box button { padding: 8px 14px; font-size: 12px; background: #22553f; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
   .toast.show { opacity: 1; }
 </style>
@@ -38,14 +35,13 @@
 <body>
 <div class="wrap">
   <h1>🔗 Global Link Shortener (JSONBin)</h1>
-  <p class="sub">Uses online dynamic API bins to sync multiple global links seamlessly.</p>
+  <p class="sub">Uses dynamic online API bins to sync links across different machines safely.</p>
   <div class="tabs"><div class="tab active" data-tab="shorten">Shorten Link</div><div class="tab" data-tab="unshorten">Decode / Unshorten</div></div>
   <div class="panel active" id="panel-shorten">
     <div class="form"><input type="text" id="urlInput" placeholder="https://example.com" /><button id="shortenBtn">Shorten URL</button></div>
-    <div class="err" id="errBox" style="display:none;"></div>
   </div>
   <div class="panel" id="panel-unshorten">
-    <div class="form"><input type="text" id="unshortInput" placeholder="Paste short link" /><button id="unshortBtn">Find URL</button></div>
+    <div class="form"><input type="text" id="unshortInput" placeholder="Paste link or code" /><button id="unshortBtn">Find URL</button></div>
     <div id="unshortResult"></div>
   </div>
   <div id="list"></div>
@@ -53,70 +49,67 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ⚠️ APNI API BIN DETAILS YAHAN BHARO
+// ⚠️ APNI JSONBIN SECRETS YAHAN LIKHO
 const BIN_ID = "YOUR_BIN_ID_HERE";
 const MASTER_KEY = "$2a$10$YOUR_MASTER_KEY_HERE";
 const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
 let globalLinks = {};
+const toastEl = document.getElementById('toast');
+function showToast(msg) { toastEl.textContent = msg; toastEl.classList.add('show'); setTimeout(() => toastEl.classList.remove('show'), 1500); }
 
 async function loadBin() {
   try {
     const res = await fetch(`${API_URL}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
     const json = await res.json();
     globalLinks = json.record || {};
-    render();
-    checkRedirect();
-  } catch (e) { console.error("Cloud fetch failed", e); }
+    render(); checkRedirect();
+  } catch (e) { console.error("Sync failed", e); }
 }
 
 async function saveBin() {
   try {
-    await fetch(API_URL, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-      body: JSON.stringify(globalLinks)
-    });
-    render();
-  } catch (e) { alert("Failed to save data to cloud API"); }
+    await fetch(API_URL, { method: "PUT", headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY }, body: JSON.stringify(globalLinks) });
+    render(); showToast('Saved globally!');
+  } catch (e) { alert("API Save Error"); }
 }
 
 function render() {
-  const listEl = document.getElementById('list');
-  const keys = Object.keys(globalLinks);
-  if (keys.length === 0) { listEl.innerHTML = '<div class="empty">No links in cloud storage bin.</div>'; return; }
-  
+  const listEl = document.getElementById('list'); const keys = Object.keys(globalLinks);
+  if (keys.length === 0) { listEl.innerHTML = '<div class="empty">No active cloud links.</div>'; return; }
   listEl.innerHTML = keys.reverse().map(code => {
-    const url = globalLinks[code];
     const base = window.location.origin + window.location.pathname;
     const shortDisplay = base.endsWith('/') ? base + '?go=' + code : base + '/?go=' + code;
-    return `
-      <div class="item">
-        <div class="short">${shortDisplay}</div>
-        <div class="orig">${url}</div>
-      </div>`;
+    return `<div class="item"><div class="short">${shortDisplay}</div><div class="orig">${globalLinks[code]}</div></div>`;
   }).join('');
 }
 
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active'); document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+}));
+
 document.getElementById('shortenBtn').addEventListener('click', async () => {
-  const url = document.getElementById('urlInput').value.trim();
-  if(!url) return;
+  const url = document.getElementById('urlInput').value.trim(); if(!url) return;
   const code = Math.random().toString(36).substring(2, 8);
-  globalLinks[code] = url;
-  document.getElementById('shortenBtn').disabled = true;
-  await saveBin();
-  document.getElementById('shortenBtn').disabled = false;
-  document.getElementById('urlInput').value = '';
+  globalLinks[code] = url; document.getElementById('shortenBtn').disabled = true;
+  await saveBin(); document.getElementById('shortenBtn').disabled = false; document.getElementById('urlInput').value = '';
+});
+
+document.getElementById('unshortBtn').addEventListener('click', () => {
+  const val = document.getElementById('unshortInput').value.trim();
+  let code = val.includes('?go=') ? val.split('?go=')[1].split('&')[0] : val.split('/').pop();
+  const resBox = document.getElementById('unshortResult');
+  if(globalLinks[code]) {
+    resBox.innerHTML = `<div class="result-box"><div><strong>Original:</strong><br><a href="${globalLinks[code]}" target="_blank">${globalLinks[code]}</a></div><button onclick="navigator.clipboard.writeText('${globalLinks[code]}');">Copy</button></div>`;
+  } else { resBox.innerHTML = '<div style="color:#f87171;font-size:14px;">Not found</div>'; }
 });
 
 function checkRedirect() {
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.has('go')) {
-    const code = urlParams.get('go');
-    if (globalLinks[code]) window.location.replace(globalLinks[code]);
-  }
+  if (urlParams.has('go') && globalLinks[urlParams.get('go')]) window.location.replace(globalLinks[urlParams.get('go')]);
 }
-
 loadBin();
 </script>
 </body>
