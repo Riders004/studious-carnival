@@ -4,6 +4,7 @@ This guide provides step-by-step instructions to connect your Link Shortener to 
 
 ---
 
+
 ## 👑 Option A: Firebase Realtime Database (Rasta 2)
 
 Firebase provides a highly secure, instant, and production-ready real-time environment. It is the recommended configuration for public deployments.
@@ -49,33 +50,42 @@ Firebase provides a highly secure, instant, and production-ready real-time envir
    ```
    
  6. Click **Publish** to save changes.
+ 
 ### Step 4: Update index.html
  1. Open your code for Rasta 2.
  2. Locate the line containing const firebaseConfig = { ... }.
  3. Paste your actual credentials gathered from Step 2 into this block, save, and push to GitHub.
+
+
 ## 📦 Option B: JSONBin.io API Cluster (Rasta 3)
+
 JSONBin offers a minimal setup requiring no dashboard logic adjustments. Ideal for rapid deployment and lightweight application architectures.
+
 ### Step 1: Create an Account
- 1. Head over to JSONBin.io.
- 2. Create a free profile using your email credentials or GitHub OAuth.
+1. Head over to [JSONBin.io](https://jsonbin.io/).
+2. Create a free profile using your email credentials or GitHub OAuth.
+
 ### Step 2: Extract Your Master API Key
- 1. Once logged in, go to your account **Dashboard / Profile Section**.
- 2. Locate your secret token labeled **Master Key**.
- 3. Copy this string (it typically starts with $2a$10$...).
+1. Once logged in, go to your account **Dashboard / Profile Section** on [JSONBin.io Keys Page](https://jsonbin.io/app/api-keys).
+2. Locate your secret token labeled **Master Key**.
+3. Copy this string (it typically starts with `$2a$10$...`).
+
 ### Step 3: Create a Dynamic Data Bin
- 1. Go to your JSONBin homepage terminal/workspace and click **Create a Bin**.
- 2. In the text field box, provide a blank JSON schema block containing just empty brackets:
- 
+1. Go to your JSONBin homepage terminal/workspace at [JSONBin.io App](https://jsonbin.io/app/) and click **Create a Bin**.
+2. In the text field box, provide a blank JSON schema block containing just empty brackets:
    ```json
    {}
    ```
  3. Click **Create** or **Save Bin**.
  4. Capture your unique **Bin ID** from the top dashboard metadata reference pane.
+ 
 ### Step 4: Bind Secrets to Source Code
  1. Open your code for Rasta 3.
  2. Replace YOUR_BIN_ID_HERE with your active Bin ID.
  3. Replace YOUR_MASTER_KEY_HERE with your extracted Master API token key string.
  4. Save and deploy your single static package structure.
+ 
+ 
 ## 🚀 Final Deployment Checklist
  1. Make sure your root file is strictly named index.html.
  2. Ensure you have replaced placeholder tokens with your real cloud authentication strings.
