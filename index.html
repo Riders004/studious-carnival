@@ -247,7 +247,7 @@ function render() {
     .reverse()
     .map(l => {
       const expired = isExpired(l);
-      const shortDisplay = window.location.origin + 'go/' + l.code;
+      const shortDisplay = window.location.origin + '/' + 'go/' + l.code;
       const date = new Date(l.created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
       const expText = formatExpiry(l);
       const expClass = expired ? 'exp-done' : (l.expiresAt && l.expiresAt - Date.now() < 3600000 ? 'exp-soon' : '');
@@ -326,7 +326,7 @@ unshortBtn.addEventListener('click', () => {
 unshortInput.addEventListener('keydown', e => { if (e.key === 'Enter') unshortBtn.click(); });
 
 window.copyCode = function (code) {
-  const text = window.location.origin + 'go/' + code;
+  const text = window.location.origin + '/' + 'go/' + code;
   navigator.clipboard?.writeText(text).catch(() => {});
   showToast('Copied: ' + text);
 };
