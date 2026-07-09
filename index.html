@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🔗 Hybrid Link Shortener (JSONBin Fixed)</title>
+<title>🔗 Hybrid Link Shortener (JSONBin Version)</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f1115; color: #e6e6e6; min-height: 100vh; padding: 20px 16px; display: flex; justify-content: center; align-items: flex-start; }
@@ -13,39 +13,31 @@
   .tabs { display: flex; gap: 6px; margin-bottom: 20px; background: #1a1d24; padding: 4px; border-radius: 10px; }
   .tab { flex: 1; text-align: center; padding: 12px 0; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; color: #8a8f98; transition: all 0.2s ease; }
   .tab.active { background: #6366f1; color: #fff; }
-  
-  /* Panels Fixed Display Logic */
   .panel { display: none; width: 100%; }
   .panel.active { display: block !important; }
-  
   .form { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; width: 100%; }
   input[type=text] { width: 100%; padding: 14px; border-radius: 10px; border: 1px solid #2a2d35; background: #1a1d24; color: #fff; font-size: 15px; outline: none; transition: border 0.2s; }
   input[type=text]:focus { border-color: #6366f1; }
   button { width: 100%; padding: 14px 20px; border-radius: 10px; border: none; background: #6366f1; color: #fff; font-weight: 600; font-size: 15px; cursor: pointer; transition: background 0.2s; }
   button:hover { background: #5457e6; }
-  
-  /* List Conditional Visibility Management */
   #list { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 20px; }
   .item { background: #1a1d24; border: 1px solid #2a2d35; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
   .short { font-size: 16px; font-weight: 600; color: #a5b4fc; word-break: break-all; }
   .orig { font-size: 13px; color: #8a8f98; word-break: break-all; }
-  
-  .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-top: 16px; margin-bottom: 16px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; word-break: break-all; }
+  .result-box { background: #14201c; border: 1px solid #22553f; border-radius: 10px; padding: 16px; margin-top: 16px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 12px; word-break: break-all; }
   .result-box .url-text { flex: 1; display: flex; flex-direction: column; gap: 4px; }
   .result-box a { color: #6ee7b7; text-decoration: none; font-weight: 500; word-break: break-all; }
   .result-box button { padding: 8px 14px; font-size: 12px; background: #22553f; color: #fff; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap; width: auto; }
-  
   .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 12px 24px; border-radius: 8px; font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 1000; }
   .toast.show { opacity: 1; }
   .empty { color: #6b7280; text-align: center; padding: 30px 0; font-size: 15px; }
-
   @media (min-width: 600px) { body { padding: 40px 24px; } .wrap { max-width: 650px; } h1 { font-size: 26px; text-align: left; } p.sub { text-align: left; font-size: 15px; } .form { flex-direction: row; } input[type=text] { flex: 1; } button { width: auto; white-space: nowrap; } }
   @media (min-width: 1024px) { .wrap { max-width: 1000px; } #list { grid-template-columns: 1fr 1fr; gap: 16px; } h1 { font-size: 32px; } }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>🔗 Hybrid Link Shortener</h1>
+  <h1>🔗 Hybrid Link Shortener (JSONBin)</h1>
   <p class="sub">Uses dynamic online API bins to sync links across different machines safely.</p>
   
   <div class="tabs">
@@ -54,17 +46,11 @@
   </div>
   
   <div class="panel active" id="panel-shorten">
-    <div class="form">
-      <input type="text" id="urlInput" placeholder="https://example.com" />
-      <button id="shortenBtn">Shorten URL</button>
-    </div>
+    <div class="form"><input type="text" id="urlInput" placeholder="https://example.com" /><button id="shortenBtn">Shorten URL</button></div>
   </div>
   
   <div class="panel" id="panel-unshorten">
-    <div class="form">
-      <input type="text" id="unshortInput" placeholder="Paste link or code" />
-      <button id="unshortBtn">Find URL</button>
-    </div>
+    <div class="form"><input type="text" id="unshortInput" placeholder="Paste link or code" /><button id="unshortBtn">Find URL</button></div>
     <div id="unshortResult"></div>
   </div>
   
@@ -73,7 +59,7 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ⚠️ APNI REAL BIN DETAILS YAHAN BHARNA
+// ⚠️ APNI DYNAMIC BIN DETAILS YAHAN BHARNA
 const BIN_ID = "6a4febd3da38895dfe476f3a";
 const MASTER_KEY = "$2a$10$/KBluzGUqR2SXkDDJDmNkugfJoKGwsZeud8L9T88oNS1fGKlCWoHC";
 const API_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;   // https://api.jsonbin.io/v3/b/6a4febd3da38895dfe476f3a // https://api.jsonbin.io/v3/b/6a4febd3da38895dfe476f3a
@@ -101,7 +87,7 @@ async function saveBin() {
 }
 
 function render() {
-  const keys = Object.keys(globalLinks).filter(k => k !== "status"); // Filters out the static active placeholder item code
+  const keys = Object.keys(globalLinks).filter(k => k !== "status");
   if (keys.length === 0) { listEl.innerHTML = '<div class="empty">No active cloud links.</div>'; return; }
   
   listEl.innerHTML = keys.reverse().map(code => {
@@ -111,7 +97,6 @@ function render() {
   }).join('');
 }
 
-// Fixed Toggle Logic: Displays history list array mapping strictly within shorten context panel
 document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', () => {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
