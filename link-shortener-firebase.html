@@ -34,6 +34,7 @@
   .row { display: flex; flex-direction: column; gap: 12px; margin-top: 6px; border-top: 1px solid #2a2d35; padding-top: 12px; }
   .meta { font-size: 12px; color: #6b7280; }
   .meta.exp-done { color: #f87171; }
+  .meta.exp-soon { color: #fbbf24; }
   .actions { display: flex; gap: 8px; width: 100%; }
   .actions button { flex: 1; padding: 10px; font-size: 13px; background: #2a2d35; }
   .actions button:hover { background: #363a45; }
@@ -152,10 +153,26 @@ function buildShortLink(code) {
   return base.endsWith('/') ? base + '?go=' + code : base + '/?go=' + code;
 }
 
+function isExpired(l) { return l.expiresAt !== null && l.expiresAt !== undefined && l.expiresAt <= Date.now(); }
+
+function formatExpiry(l) {
+  if (l.expiresAt === null || l.expiresAt === undefined) return 'Never expires';
+  const diff = l.expiresAt - Date.now();
+  if (diff <= 0) return 'Expired';
+  const mins = Math.round(diff / 60000);
+  if (mins < 60) return `Expires in ${mins}m`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `Expires in ${hrs}h`;
+  const days = Math.round(hrs / 24);
+  return `Expires in ${days}d`;
+}
+
+let linksCache = {};
 function syncLinks() {
   db.ref('links').on('value', (snapshot) => {
     const data = snapshot.val() || {};
     knownCodes = new Set(Object.keys(data));
+    linksCache = data;
     const globalLinks = Object.keys(data).map(key => ({ code: key, ...data[key] }));
     render(globalLinks);
   });
@@ -164,16 +181,18 @@ function syncLinks() {
 function render(globalLinks) {
   if (globalLinks.length === 0) { listEl.innerHTML = '<div class="empty">No active cloud links.</div>'; return; }
   listEl.innerHTML = globalLinks.slice().reverse().map(l => {
-    const expired = l.expiresAt !== null && l.expiresAt <= Date.now();
+    const expired = isExpired(l);
     const shortDisplay = buildShortLink(l.code);
+    const dateText = l.created ? new Date(l.created).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
+    const expClass = expired ? 'exp-done' : (l.expiresAt && l.expiresAt - Date.now() < 3600000 ? 'exp-soon' : '');
     return `
       <div class="item ${expired ? 'expired' : ''}">
-        <div class="short">${shortDisplay}</div>
+        <div class="short">${escapeHtml(shortDisplay)}</div>
         <div class="orig">${escapeHtml(l.url)}</div>
         <div class="row">
-          <span class="meta">${expired ? '<span class="exp-done">Expired</span>' : 'Active global link'}</span>
+          <span class="meta">${dateText ? dateText + ' · ' : ''}<span class="${expClass}">${formatExpiry(l)}</span></span>
           <div class="actions">
-            ${!expired ? `<button onclick="copyCode('${l.code}')">Copy</button>` : ''}
+            ${!expired ? `<button onclick="copyCode('${l.code}')">Copy</button><button onclick="openUrl('${l.code}')">Open</button>` : ''}
             <button class="del" onclick="deleteLink('${l.code}')">Delete</button>
           </div>
         </div>
@@ -209,6 +228,7 @@ unshortBtn.addEventListener('click', () => {
 
 window.copyDecodedUrl = function(u) { navigator.clipboard?.writeText(u).then(() => showToast('Original URL Copied!')); };
 window.copyCode = function(c) { navigator.clipboard?.writeText(buildShortLink(c)).then(() => showToast('Short Link Copied!')); };
+window.openUrl = function(c) { const l = linksCache[c]; if (l && !isExpired(l)) window.open(l.url, '_blank'); };
 window.deleteLink = function(c) { db.ref('links/' + c).remove().then(() => showToast('Deleted')); };
 
 btnEl.addEventListener('click', shorten);
